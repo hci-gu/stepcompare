@@ -1,0 +1,23 @@
+version: '3.1'
+services:
+  jupyter:
+    build: './jupyter'
+    ports:
+      - 8888:8888
+    environment:
+      JUPYTER_ENABLE_LAB: 'yes'
+  postgres:
+    image: postgres:14.1
+    hostname: postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stepcompare
+      PGDATA: /var/lib/postgresql/data/pgdata
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
