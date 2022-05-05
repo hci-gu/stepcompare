@@ -4,7 +4,14 @@ import 'dart:io' show Platform;
 
 import 'package:stepcompare/garmin_client.dart';
 
-const String apiUrl = 'http://192.168.0.33:4000';
+const String apiUrl = 'https://stepcompare-api.appadem.in';
+
+String getPlatformForSourceName(String sourceName) {
+  if (sourceName.toLowerCase().contains('watch')) {
+    return 'Apple Watch';
+  }
+  return 'iPhone';
+}
 
 class StepData {
   final int value;
@@ -24,7 +31,9 @@ class StepData {
       value: healthDataPoint.value.toInt(),
       from: healthDataPoint.dateFrom,
       to: healthDataPoint.dateTo,
-      device: Platform.isIOS ? 'iOS' : 'Android',
+      device: Platform.isIOS
+          ? getPlatformForSourceName(healthDataPoint.sourceName)
+          : 'Android',
     );
   }
 
@@ -53,6 +62,7 @@ class Api {
     connectTimeout: 5000,
     receiveTimeout: 45000,
   ));
+  String get userId => _userId;
 
   Future<String?> getUser(String id) async {
     var response = await dio.get('/users/$id');
@@ -78,10 +88,10 @@ class Api {
 
   Future uploadSteps(List<StepData> steps) async {
     print('/users/$_userId/steps');
-    // await dio.post(
-    //   '/users/$_userId/steps',
-    //   data: steps.map((step) => step.toJson()).toList(),
-    // );
+    await dio.post(
+      '/users/$_userId/steps',
+      data: steps.map((step) => step.toJson()).toList(),
+    );
   }
 
   static final Api _instance = Api._internal();

@@ -22,7 +22,6 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     AppModel model = Provider.of<AppModel>(context);
@@ -46,34 +45,86 @@ class MyApp extends StatelessWidget {
           ),
         ),
         body: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(16.0),
           child: Center(
-            child: Column(
-              children: [
-                const Text('hellos'),
-                if (!model.hasAccess)
-                  TextButton.icon(
-                    onPressed: () => model.giveAccess(),
-                    icon: const Icon(Icons.lock),
-                    label: const Text('Give access'),
-                  ),
-                if (model.hasAccess)
-                  TextButton.icon(
-                    onPressed: () => model.getAndUploadSteps(),
-                    icon: const Icon(Icons.run_circle_outlined),
-                    label: const Text('Get and upload steps'),
-                  ),
-                Text('Steps: ${model.phoneSteps.length}'),
-                GarminAuth(
-                  callback: (args) {
-                    model.uploadGarmin(args);
-                  },
-                ),
-              ],
-            ),
+            child: model.uploading
+                ? const CircularProgressIndicator()
+                : const Home(),
           ),
         ),
       ),
+    );
+  }
+}
+
+class Home extends StatelessWidget {
+  const Home({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    AppModel model = Provider.of<AppModel>(context);
+
+    return Column(
+      children: [
+        const Text(
+          'Hello, this is the test version of Stepcompare. The button below asks for access and fetches your steps from Apple health or Google fit, and then you can sign in with Garmin to compare your steps. The result will be uploaded and not visible in the app.',
+        ),
+        const SizedBox(height: 8),
+        const Text('Your userId is:'),
+        Text('${model.userId}',
+            style: const TextStyle(fontWeight: FontWeight.w700)),
+        const Text(
+            'If you want to remain anonymous keep this to yourself, otherwise this can be used to identify your data for the people running the experiment.'),
+        const SizedBox(height: 16),
+        _phoneSteps(context, model),
+        const SizedBox(height: 16),
+        _garminSteps(context, model),
+      ],
+    );
+  }
+
+  Widget _garminSteps(BuildContext context, AppModel model) {
+    if (model.garminCompleted) {
+      return const Text(
+        'Garmin steps uploaded, thank you for helping us test!',
+      );
+    }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text('Upload Steps from garmin:'),
+        GarminAuth(
+          callback: (args) {
+            model.uploadGarmin(args);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _phoneSteps(BuildContext context, AppModel model) {
+    if (model.phoneCompleted) {
+      return const Text(
+        'Phone steps uploaded, thank you for helping us test!',
+      );
+    }
+    return Column(
+      children: [
+        const Text('Upload Steps from phone and/or Apple watch:'),
+        if (model.hasAccess)
+          TextButton.icon(
+            onPressed: () => model.getAndUploadSteps(),
+            icon: const Icon(Icons.run_circle_outlined),
+            label: const Text('Get and upload steps'),
+          ),
+        if (!model.hasAccess)
+          TextButton.icon(
+            onPressed: () => model.giveAccess(),
+            icon: const Icon(Icons.lock),
+            label: const Text('Give access'),
+          )
+      ],
     );
   }
 }

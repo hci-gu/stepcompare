@@ -6,11 +6,14 @@ import 'package:stepcompare/storage.dart';
 
 class AppModel extends ValueNotifier {
   final HealthFactory healthFactory = HealthFactory();
-  final DateTime start = DateTime.now().subtract(const Duration(days: 30));
+  final DateTime start = DateTime.now().subtract(const Duration(days: 30 * 5));
   final types = [HealthDataType.STEPS];
   final DateTime end = DateTime.now();
+  String userId = '';
   bool uploading = false;
   bool _hasAccess = false;
+  bool phoneCompleted = false;
+  bool garminCompleted = false;
 
   List<HealthDataPoint> _phoneSteps = [];
 
@@ -20,17 +23,21 @@ class AppModel extends ValueNotifier {
   List<HealthDataPoint> get phoneSteps => _phoneSteps;
 
   init() async {
-    String? userId = await Storage.getUserId();
+    String? _userId = await Storage.getUserId();
 
-    if (userId == null) {
-      userId = await Api().createUser();
-      if (userId == null) {
+    if (_userId == null) {
+      _userId = await Api().createUser();
+      if (_userId == null) {
         return;
       }
-      await Storage.storeUserId(userId);
+      await Storage.storeUserId(_userId);
     } else {
-      await Api().getUser(userId);
+      _userId = await Api().getUser(_userId);
     }
+
+    userId = _userId ?? '';
+
+    notifyListeners();
   }
 
   giveAccess() async {
@@ -45,13 +52,13 @@ class AppModel extends ValueNotifier {
       _phoneSteps =
           await healthFactory.getHealthDataFromTypes(start, end, types);
       notifyListeners();
-    } catch (e) {
-      print(e);
-    }
+    } catch (_) {}
+
     List<StepData> steps =
         _phoneSteps.map((e) => StepData.fromHealthDataPoint(e)).toList();
     await Api().uploadSteps(steps);
     uploading = false;
+    phoneCompleted = true;
     notifyListeners();
   }
 
@@ -63,6 +70,7 @@ class AppModel extends ValueNotifier {
         garminSteps.map((e) => StepData.fromGarmin(e)).toList();
     await Api().uploadSteps(steps);
     uploading = false;
+    garminCompleted = true;
     notifyListeners();
   }
 }

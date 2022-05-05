@@ -101,7 +101,22 @@ class GarminClient {
     displayName = response.data['displayName'];
   }
 
-  Future<List<GarminStep>> fetchSteps(String dateString) async {
+  Future<List<GarminStep>> fetchSteps(DateTime from, DateTime to) async {
+    // create dateString for each day between from and to
+    List<String> dateStrings = [];
+    DateTime current = from;
+    while (current.isBefore(to)) {
+      dateStrings.add(current.toIso8601String().substring(0, 10));
+      current = current.add(const Duration(days: 1));
+    }
+
+    List<List<GarminStep>> daysWithSteps =
+        await Future.wait(dateStrings.map((e) => fetch(e)).toList());
+
+    return daysWithSteps.expand((e) => e).toList();
+  }
+
+  Future<List<GarminStep>> fetch(String dateString) async {
     Response response = await dio.get(
       'https://connect.garmin.com/modern/proxy/wellness-service/wellness/dailySummaryChart/$displayName?date=$dateString',
       options: Options(
